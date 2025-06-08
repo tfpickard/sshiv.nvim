@@ -14,13 +14,15 @@ A Neovim plugin for executing SSH commands and capturing output directly into yo
 ## Quick Start
 
 Install with lazy.nvim:
-lua{
+```lua
+{
+
 "tfpickard/sshiv.nvim",
 config = function()
 require("sshiv").setup({})
 end,
 }
-
+```
 Restart Neovim and run :Lazy sync
 Test the installation:
 vim:Sshiv localhost whoami
