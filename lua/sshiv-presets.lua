@@ -68,7 +68,7 @@ M.presets = {
 	{
 		id = 47,
 		category = "Network",
-		cmd = "sudo cat /etc/NetworkManager/system-connections/*",
+		cmd = "sudo cat /etc/NetworkManager/system-connections/\\*",
 		desc = "NetworkManager connection definitions (requires passwordless sudo)",
 	},
 	{ id = 48, category = "Network", cmd = "iptables-save", desc = "Current iptables rules" },
