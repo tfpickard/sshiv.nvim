@@ -63,13 +63,13 @@ M.presets = {
 	{ id = 42, category = "Git", cmd = "git branch -a", desc = "All git branches" },
 	{ id = 43, category = "Git", cmd = "git status --porcelain", desc = "Git status (parseable)" },
 	{ id = 44, category = "Git", cmd = "git diff --name-only", desc = "Changed files" },
-	{ id = 45, category = "Network", cmd = "cat /etc/network/interfaces", desc = "Network interfaces config" },
+	{ id = 45, category = "Network", cmd = "nmcli con show", desc = "NetworkManager connections" },
 	{ id = 46, category = "Network", cmd = "cat /etc/netplan/*.yaml", desc = "Netplan configuration" },
 	{
 		id = 47,
 		category = "Network",
-		cmd = "cat /etc/NetworkManager/system-connections/*",
-		desc = "NetworkManager connections",
+		cmd = "sudo cat /etc/NetworkManager/system-connections/*",
+		desc = "NetworkManager connection definitions (requires passwordless sudo)",
 	},
 	{ id = 48, category = "Network", cmd = "iptables-save", desc = "Current iptables rules" },
 	{ id = 49, category = "Network", cmd = "ip route show table all", desc = "All routing tables" },
@@ -300,6 +300,7 @@ M.presets = {
 	{ id = 248, category = "Shell", cmd = "type -a python", desc = "Python command type" },
 	{ id = 249, category = "Random", cmd = "fortune", desc = "Random fortune" },
 	{ id = 250, category = "Random", cmd = "cal", desc = "Calendar" },
+	{ id = 251, category = "Network", cmd = "cat /etc/network/interfaces", desc = "Network interfaces config" },
 }
 
 function M.get_preset(id)
