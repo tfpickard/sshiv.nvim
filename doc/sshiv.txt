@@ -1,0 +1,606 @@
+*sshiv.txt*    SSH IV for Neovim - Execute SSH commands directly into buffers
+
+                    SSHIV.NVIM - SSH IN VIM                    *sshiv*
+
+Inject SSH directly into your veins if buffers were veins.
+
+Author: tfpickard
+Version: 1.0
+License: MIT
+
+==============================================================================
+CONTENTS                                                        *sshiv-contents*
+
+    1. Introduction ......................... |sshiv-introduction|
+    2. Installation ......................... |sshiv-installation|
+    3. Quick Start .......................... |sshiv-quickstart|
+    4. Commands ............................. |sshiv-commands|
+    5. Configuration ........................ |sshiv-configuration|
+    6. Presets .............................. |sshiv-presets|
+    7. Stdin Support ........................ |sshiv-stdin|
+    8. FZF Integration ...................... |sshiv-fzf|
+    9. Key Mappings ......................... |sshiv-mappings|
+    10. Lua API ............................. |sshiv-api|
+    11. Examples ............................ |sshiv-examples|
+    12. Troubleshooting ..................... |sshiv-troubleshooting|
+
+==============================================================================
+1. INTRODUCTION                                             *sshiv-introduction*
+
+Sshiv.nvim is a Neovim plugin for executing SSH commands and capturing output
+directly into your buffer. Like an IV drip for SSH commands - if files were
+veins.
+
+The name "Sshiv" comes from:
+• SSH IV - Like an intravenous injection of SSH commands directly into files
+• SSH in Vim - Because that's exactly what it does
+• Fast & Direct - No context switching, just pure SSH goodness
+
+Key Features:
+• Execute arbitrary SSH commands from within Neovim
+• Capture output directly into your current buffer
+• Support for both interactive and direct command execution
+• 250 carefully curated command presets
+• Stdin support for sending buffer content to remote commands
+• FZF integration for fuzzy searching presets
+• Smart completion for hosts and commands
+• Configurable SSH options and timeouts
+
+==============================================================================
+2. INSTALLATION                                             *sshiv-installation*
+
+Using lazy.nvim: >
+    {
+        "tfpickard/sshiv.nvim",
+        config = function()
+            require("sshiv").setup({})
+        end,
+    }
+<
+
+Using packer.nvim: >
+    use {
+        'tfpickard/sshiv.nvim',
+        config = function()
+            require('sshiv').setup({})
+        end
+    }
+<
+
+Using vim-plug: >
+    Plug 'tfpickard/sshiv.nvim'
+<
+
+Then in your init.lua: >
+    require('sshiv').setup({})
+<
+
+==============================================================================
+3. QUICK START                                               *sshiv-quickstart*
+
+After installation:
+
+1. Restart Neovim and run `:Lazy sync` (if using lazy.nvim)
+
+2. Test the installation: >
+    :Sshiv localhost whoami
+<
+
+3. View available presets: >
+    :SshivPresetList
+<
+
+4. Use FZF for quick access (if FZF is installed): >
+    :SshivPresetFzf localhost
+<
+
+==============================================================================
+4. COMMANDS                                                   *sshiv-commands*
+
+                                                                      *:Sshiv*
+:Sshiv [host] [command]
+    Interactive execution. If no arguments provided, prompts for host and
+    command. If only host provided, prompts for command.
+
+                                                                   *:SshivHost*
+:SshivHost {host} {command}
+    Execute command on host immediately. Alternative syntax to :Sshiv.
+
+                                                                   *:SshivLast*
+:SshivLast
+    Re-execute the last SSH command.
+
+                                                                  *:SshivStdin*
+:SshivStdin [host] [command]
+    Interactive stdin execution. Prompts for host, command, and content source.
+
+                                                            *:SshivStdinBuffer*
+:SshivStdinBuffer {host} {command}
+    Send current buffer content as stdin to the remote command.
+
+                                                            *:SshivStdinVisual*
+:SshivStdinVisual {host} {command}
+    Send visual selection as stdin to the remote command.
+    Use with range: `:'<,'>SshivStdinVisual host command`
+
+                                                              *:SshivStdinFzf*
+:SshivStdinFzf [host]
+    Select stdin-compatible preset with FZF using buffer content.
+
+                                                                 *:SshivPreset*
+:SshivPreset {host} {preset_id}
+    Execute preset command by number (1-250 or 1000+ for user presets).
+
+                                                              *:SshivPresetFzf*
+:SshivPresetFzf [host]
+    Select preset using FZF fuzzy finder.
+
+                                                             *:SshivPresetList*
+:SshivPresetList
+    Show all 250 available command presets in a new buffer.
+
+==============================================================================
+5. CONFIGURATION                                         *sshiv-configuration*
+
+Configure the plugin in your `setup()` call: >
+
+    require("sshiv").setup({
+        -- SSH connection options (passed to ssh command)
+        ssh_options = {
+            "-o", "ConnectTimeout=10",
+            "-o", "StrictHostKeyChecking=no", 
+            "-o", "UserKnownHostsFile=/dev/null",
+            "-o", "LogLevel=ERROR"
+        },
+
+        -- Where to insert output
+        output_position = 'cursor', -- 'cursor', 'end', 'beginning'
+
+        -- Visual separator
+        add_separator = true,
+        separator_text = "=== SSH Output ===",
+
+        -- Command execution
+        timeout = 30000, -- milliseconds
+        default_user = nil, -- nil = current user, or specify username
+
+        -- Output formatting  
+        show_command = true,
+        command_prefix_format = "$ %s@%s: %s", -- user@host: command
+
+        -- User presets (starting at ID 1000)
+        user_presets = {
+            {
+                cmd = "docker stats --no-stream",
+                desc = "Docker container stats",
+                category = "Docker"
+            },
+            {
+                cmd = "kubectl get pods -A",
+                desc = "All Kubernetes pods", 
+                category = "Kubernetes"
+            }
+        }
+    })
+<
+
+Configuration Options:                                  *sshiv-config-options*
+
+ssh_options             List of SSH command options
+output_position         Where to insert output: 'cursor', 'end', 'beginning'
+add_separator           Boolean: Add separator before output
+separator_text          Text for separator line
+timeout                 Command timeout in milliseconds  
+default_user            Default SSH user (nil = current user)
+show_command            Boolean: Show executed command in output
+command_prefix_format   Format string for command display
+user_presets            List of user-defined presets (see |sshiv-presets|)
+
+==============================================================================
+6. PRESETS                                                     *sshiv-presets*
+
+Sshiv includes 250 carefully curated command presets ordered by likelihood
+of needing output in a buffer. Perfect for DevSecOps workflows.
+
+Preset Categories:                                      *sshiv-preset-categories*
+
+Most Likely (1-25) - Configuration & Keys:
+• SSH authorized keys, configs
+• Environment variables, shell configs  
+• System configuration files
+
+High Likelihood (26-75) - Security & Application Configs:
+• SSL certificates, GPG keys
+• Docker, Kubernetes configurations
+• Database connections, web server configs
+
+Medium-High (76-125) - System Information:
+• Hardware info, disk usage, network interfaces
+• Process lists, service status
+• Package information
+
+Medium (126-175) - Development & Tools:
+• Version information for dev tools
+• CI/CD configurations
+• Monitoring and backup configs
+
+Lower Priority (176-250) - Monitoring & Status:
+• Real-time monitoring commands  
+• Network diagnostics
+• Performance statistics
+
+Popular Presets:                                         *sshiv-preset-popular*
+
+1   cat ~/.ssh/authorized_keys          SSH authorized keys
+2   cat ~/.ssh/config                   SSH client config  
+3   cat /etc/ssh/sshd_config           SSH daemon config
+10  cat /etc/hosts                      Hosts file
+13  git config --list                   All git configuration
+17  crontab -l                         User crontab
+30  docker inspect $(docker ps -q)     All container details
+76  uname -a                           System information
+83  df -h                              Disk usage
+96  docker ps -a                       All containers
+
+User Presets:                                           *sshiv-preset-user*
+
+User-defined presets start at ID 1000. Define them in setup(): >
+
+    require("sshiv").setup({
+        user_presets = {
+            {
+                cmd = "tailscale status",
+                desc = "Tailscale VPN status",
+                category = "Network"
+            },
+            {
+                cmd = "brew list --cask",
+                desc = "Homebrew cask packages",
+                category = "Package"  
+            }
+        }
+    })
+<
+
+==============================================================================
+7. STDIN SUPPORT                                               *sshiv-stdin*
+
+Sshiv supports sending buffer content, visual selections, or text objects
+as stdin to remote commands - perfect for configuration management!
+
+Content Sources:                                        *sshiv-stdin-sources*
+
+• Buffer Content - Send entire current buffer
+• Visual Selection - Send only selected text  
+• Text Objects - Send specific text objects (paragraphs, etc.)
+• Manual Input - Type content directly
+
+Common Use Cases:                                      *sshiv-stdin-usecases*
+
+Append SSH key to authorized_keys: >
+    :SshivStdinBuffer server1 "tee -a ~/.ssh/authorized_keys"
+<
+
+Apply Kubernetes manifest: >
+    :SshivStdinBuffer k8s-master "kubectl apply -f -"
+<
+
+Update nginx configuration: >
+    :SshivStdinVisual web01 "sudo tee /etc/nginx/sites-available/default"
+<
+
+Execute SQL commands: >
+    :SshivStdinBuffer db01 "mysql -u root -p mydb"
+<
+
+Stdin-Compatible Presets:                              *sshiv-stdin-presets*
+
+Use `:SshivStdinFzf` to see presets that work well with stdin:
+
+1002  tee -a ~/.ssh/authorized_keys    Append to authorized_keys
+1004  kubectl apply -f -               Apply Kubernetes manifest  
+1005  mysql -u root -p < /dev/stdin    Execute SQL
+1007  gpg --import                     Import GPG key
+
+==============================================================================
+8. FZF INTEGRATION                                               *sshiv-fzf*
+
+Sshiv provides powerful FZF integration for preset selection (requires FZF
+to be installed and available in PATH).
+
+The FZF interface shows:
+• Preset number for quick reference
+• Category for organization
+• Full command
+• Description 
+• Preview of the description
+
+FZF Commands:                                            *sshiv-fzf-commands*
+
+:SshivPresetFzf [host]     Select preset with FZF
+:SshivStdinFzf [host]      Select stdin preset with FZF
+
+FZF shows 250 presets with fuzzy search. Type to filter by:
+• Preset number
+• Category name
+• Command text
+• Description
+
+Example FZF usage: >
+    :SshivPresetFzf myserver
+    
+    # In FZF, type "docker" to see Docker-related presets
+    # Or type "30" to find preset #30
+    # Or type "config" to see configuration presets
+<
+
+==============================================================================
+9. KEY MAPPINGS                                               *sshiv-mappings*
+
+Sshiv doesn't set default key mappings to avoid conflicts. Add your own
+in your Neovim configuration:
+
+Suggested mappings: >
+
+    -- Basic commands
+    vim.keymap.set('n', '<leader>ss', ':Sshiv<CR>', { desc = 'SSH Interactive' })
+    vim.keymap.set('n', '<leader>sr', ':SshivLast<CR>', { desc = 'SSH Repeat' })
+    vim.keymap.set('n', '<leader>sl', ':Sshiv localhost<CR>', { desc = 'SSH Localhost' })
+    
+    -- Presets
+    vim.keymap.set('n', '<leader>sp', ':SshivPresetFzf<CR>', { desc = 'SSH Preset FZF' })
+    vim.keymap.set('n', '<leader>s?', ':SshivPresetList<CR>', { desc = 'SSH Preset List' })
+    
+    -- Stdin
+    vim.keymap.set('n', '<leader>sb', ':SshivStdinBuffer<CR>', { desc = 'SSH Stdin Buffer' })
+    vim.keymap.set('v', '<leader>sv', ':SshivStdinVisual<CR>', { desc = 'SSH Stdin Visual' })
+    vim.keymap.set('n', '<leader>sB', ':SshivStdinFzf<CR>', { desc = 'SSH Stdin FZF' })
+    
+    -- Quick presets
+    vim.keymap.set('n', '<leader>si', function()
+        require('sshiv').exec_preset(vim.fn.input('Host: '), 85) -- uptime
+    end, { desc = 'SSH System Info' })
+<
+
+Advanced mappings with workflows: >
+
+    -- Server health check workflow
+    vim.keymap.set('n', '<leader>sh', function()
+        local host = vim.fn.input("Server: ", "")
+        if host ~= "" then
+            local sshiv = require("sshiv")
+            sshiv.exec_preset(host, 85)   -- uptime
+            sshiv.exec_preset(host, 84)   -- memory
+            sshiv.exec_preset(host, 83)   -- disk space
+            sshiv.exec_preset(host, 176)  -- top processes
+        end
+    end, { desc = "Server health check" })
+<
+
+==============================================================================
+10. LUA API                                                      *sshiv-api*
+
+The plugin provides a Lua API for programmatic use:
+
+Core Functions:                                          *sshiv-api-core*
+
+require('sshiv').exec({host}, {command})                           *sshiv.exec*
+    Execute SSH command and insert output into buffer.
+
+require('sshiv').exec_with_stdin({host}, {command}, {content})     *sshiv.exec_with_stdin*
+    Execute SSH command with stdin content.
+
+require('sshiv').exec_sync({host}, {command}, [timeout])           *sshiv.exec_sync*
+    Execute SSH command synchronously and return result.
+    Returns: output, error
+
+require('sshiv').exec_last()                                      *sshiv.exec_last*
+    Re-execute the last command.
+
+Preset Functions:                                       *sshiv-api-presets*
+
+require('sshiv').exec_preset({host}, {preset_id})                 *sshiv.exec_preset*
+    Execute preset by number.
+
+require('sshiv').exec_preset_with_stdin({host}, {preset_id}, {content}) *sshiv.exec_preset_with_stdin*
+    Execute preset with stdin content.
+
+require('sshiv').get_preset({id})                                 *sshiv.get_preset*
+    Get preset information by ID.
+
+require('sshiv').list_presets()                                   *sshiv.list_presets*
+    Get all presets.
+
+require('sshiv').get_presets_by_category({category})              *sshiv.get_presets_by_category*
+    Get presets by category name.
+
+require('sshiv').get_categories()                                 *sshiv.get_categories*
+    Get all category names.
+
+FZF Functions:                                           *sshiv-api-fzf*
+
+require('sshiv').fzf_presets([host])                              *sshiv.fzf_presets*
+    Open FZF preset selector.
+
+require('sshiv').fzf_presets_stdin({host}, [content_source])      *sshiv.fzf_presets_stdin*
+    Open FZF stdin preset selector.
+
+Configuration Functions:                                *sshiv-api-config*
+
+require('sshiv').get_config()                                     *sshiv.get_config*
+    Get current configuration.
+
+require('sshiv').update_config({new_config})                      *sshiv.update_config*
+    Update configuration.
+
+==============================================================================
+11. EXAMPLES                                                  *sshiv-examples*
+
+Basic Usage:                                            *sshiv-examples-basic*
+
+Interactive prompts: >
+    :Sshiv
+    " Prompts for host and command
+<
+
+Direct execution: >
+    :Sshiv myserver ls -la /var/log
+    :SshivHost web01 docker ps
+<
+
+Using presets: >
+    :SshivPreset myserver 1      " SSH authorized keys
+    :SshivPreset web01 96        " All containers
+    :SshivPresetFzf myserver     " FZF selection
+<
+
+Stdin Examples:                                         *sshiv-examples-stdin*
+
+Send buffer as configuration: >
+    :SshivStdinBuffer myserver "sudo tee /etc/nginx/nginx.conf"
+<
+
+Send visual selection: >
+    " Select text in visual mode, then:
+    :'<,'>SshivStdinVisual myserver "base64 -d > /tmp/decoded"
+<
+
+Interactive stdin: >
+    :SshivStdin
+    " Prompts for host, command, and content source
+<
+
+Lua API Examples:                                        *sshiv-examples-api*
+
+Basic execution: >
+    local sshiv = require("sshiv")
+    sshiv.exec("myserver", "uptime")
+<
+
+With stdin: >
+    local config_content = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n')
+    sshiv.exec_with_stdin("myserver", "sudo tee /etc/config", config_content)
+<
+
+Synchronous execution: >
+    local output, error = sshiv.exec_sync("myserver", "whoami", 5000)
+    if output then
+        print("User:", vim.trim(output))
+    else
+        print("Error:", error)
+    end
+<
+
+Preset usage: >
+    sshiv.exec_preset("myserver", 1)  -- SSH keys
+    
+    local preset = sshiv.get_preset(30)
+    print(preset.cmd, preset.desc)
+<
+
+Workflow Examples:                                    *sshiv-examples-workflow*
+
+Health check workflow: >
+    local function health_check(host)
+        local sshiv = require("sshiv")
+        sshiv.exec_preset(host, 85)   -- uptime
+        sshiv.exec_preset(host, 84)   -- memory usage
+        sshiv.exec_preset(host, 83)   -- disk usage
+        sshiv.exec_preset(host, 176)  -- top processes
+    end
+    
+    health_check("web01")
+<
+
+Configuration deployment: >
+    local function deploy_config(host, config_file)
+        local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        local content = table.concat(lines, '\n')
+        local sshiv = require("sshiv")
+        
+        -- Deploy config
+        sshiv.exec_with_stdin(host, "sudo tee " .. config_file, content)
+        
+        -- Test configuration (nginx example)
+        if config_file:match("nginx") then
+            sshiv.exec(host, "sudo nginx -t")
+            sshiv.exec(host, "sudo systemctl reload nginx")
+        end
+    end
+<
+
+==============================================================================
+12. TROUBLESHOOTING                                   *sshiv-troubleshooting*
+
+Common Issues:                                        *sshiv-troubleshooting-common*
+
+Connection timeout:
+• Increase timeout in configuration: `timeout = 60000`
+• Check SSH connectivity manually: `ssh -o ConnectTimeout=5 host`
+
+Authentication failures:
+• Ensure SSH key authentication is working
+• Test manual connection: `ssh host whoami`
+• Check SSH agent: `ssh-add -l`
+
+Command hangs:
+• Avoid interactive commands that wait for input
+• Use commands that exit cleanly
+• Increase timeout for long-running commands
+
+FZF not working:
+• Install FZF: `brew install fzf` (Mac) or `paru -S fzf` (Arch)
+• Ensure FZF is in PATH: `which fzf`
+
+Output formatting issues:
+• Adjust `output_position` setting
+• Modify `separator_text` and `command_prefix_format`
+• Disable separators: `add_separator = false`
+
+Preset not found:
+• Check preset ID: `:SshivPresetList`
+• User presets start at ID 1000
+• Verify preset exists: `require('sshiv').get_preset(id)`
+
+Environment Issues:                                 *sshiv-troubleshooting-env*
+
+Commands behave differently than expected:
+• SSH runs commands in non-interactive shell
+• PATH may be different in SSH session
+• Use full paths to binaries when needed: `/usr/bin/docker ps`
+
+Sudo prompts:
+• Configure passwordless sudo for specific commands
+• Use SSH key forwarding if needed
+• Consider using `sudo -n` (non-interactive)
+
+Debug Information:                                 *sshiv-troubleshooting-debug*
+
+Enable debug output: >
+    require('sshiv').update_config({
+        ssh_options = {
+            "-o", "ConnectTimeout=10",
+            "-o", "LogLevel=DEBUG",  -- Change from ERROR to DEBUG
+            "-v"  -- Verbose SSH output
+        }
+    })
+<
+
+Test SSH connectivity: >
+    :SshivHost localhost echo "SSH working"
+<
+
+Check configuration: >
+    :lua vim.print(require('sshiv').get_config())
+<
+
+Security Considerations:                           *sshiv-troubleshooting-security*
+
+• Plugin assumes SSH key-based authentication
+• Disables strict host checking by default (adjust if needed)
+• Commands timeout after 30 seconds by default
+• No password prompts - commands fail if key auth unavailable
+• Be careful with commands that modify system state
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
