@@ -1,15 +1,12 @@
-# Sshiv.nvim - SSH IV for Neovim
+# Sshiv.nvim - ssh in vim.
 
-**Inject SSH directly into your veins if buffers were veins.** ⌁
-... aka _SSH In Vim_
+***Inject SSH output into your buffers.*** ⌁
 
 A Neovim plugin for executing SSH commands and capturing output directly into your buffer. Like an IV drip for SSH commands - if files were veins.
 
 ## Why "Sshiv"?
 
-- **SSH IV** - Like an intravenous injection of SSH commands directly into file
-- **SSH in Vim** - Because that's exactly what it does
-- **Fast & Direct** - No context switching, just pur
+Because sometimes you need to run some command on a remote machine, or dozens of them, just to copy its output into a file yoor editing. And some times you need it _now_.
 
 ## Quick Start
 
@@ -35,27 +32,27 @@ vim<leader>spe SSH goodness flowing straight into your workflow
 
 ## Features
 
-**🔌 ☃︎Core SSH Functionality:**
+**🫀 Core SSH Functionality:**
 
 - Execute arbitrary SSH commands from within Neovim
 - Capture output directly into your current buffer
 - Support for both interactive and direct command execution
 - Smart completion for hosts and commands with history
 
-**🦠 Stdin Support:**
+**👉 Stdin Support:**
 
 - Send buffer content as stdin to remote commands
 - Send visual selections as stdin
 - Text object support for precise content selection
 - Perfect for configuration management and data transfer
 
-** ☄︎250 Command Presets:**
+**🪼 250 Command Presets:**
 
 - Ordered by likelihood of needing output in buffer: configs, keys, logs, security audits
 - User presets starting at ID 1000
 - FZF integration for fuzzy searching
 
-**♆ Advanced Features:**
+**🌬️ Advanced Features:**
 
 - Synchronous and asynchronous execution
 - Configurable SSH options and timeouts
